@@ -12,12 +12,9 @@ import com.bandwidth.twofactorauth.models.TwoFactorVoiceResponse;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Scanner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Main {
 
-    static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     private static final String username = System.getenv("BANDWIDTH_USERNAME");
     private static final String password = System.getenv("BANDWIDTH_PASSWORD");
@@ -37,51 +34,55 @@ public class Main {
 
         Scanner scanner = new Scanner(new InputStreamReader(System.in));
 
-        logger.info("Send the code to the following phonenumber: ");
+        System.out.println("Send the code to the following phone number (E164 format: +13330004444): ");
         String toNumber = scanner.nextLine();
 
-        logger.info("Text or Voice? ");
+        System.out.println("Text or Voice? ");
         String option = scanner.nextLine();
 
         boolean success = false;
+        String applicationId = null;
         if ("text".equalsIgnoreCase(option)) {
             success = sendMessageCode(toNumber);
+            applicationId = messagingApplicationId;
         } else if ("voice".equalsIgnoreCase(option)) {
             success = sendVoiceCode(toNumber);
+            applicationId = voiceApplicationId;
         } else {
-            logger.error("Must be 'Voice' or 'text'");
+            System.out.println("Must be 'Voice' or 'text'");
             return;
         }
 
         if (!success) {
-            logger.error("There was an error during code creation.");
+            System.out.println("There was an error during code creation.");
             return;
         }
 
-        logger.info("What is the Code? ");
+        System.out.println("What is the Code? ");
         String code = scanner.nextLine();
 
         ApiResponse<TwoFactorVerifyCodeResponse> verifyResponse = null;
         try {
             verifyResponse = controller.createVerifyTwoFactor(accountId, new TwoFactorVerifyRequestSchema().toBuilder()
-                .applicationId(voiceApplicationId)
+                .applicationId(applicationId)
                 .code(code)
-                .to("")
-                .from("")
+                .to(toNumber)
+                .from(bandwidthNumber)
                 .digits(5)
                 .scope("sample")
                 .expirationTimeInMinutes(3)
                 .build()
             );
         } catch (ApiException e) {
-            logger.error(e.getMessage());
+            System.out.println(e.getMessage());
+            System.out.println(e.getResponseCode());
             return;
         }
 
         if (Boolean.TRUE.equals(verifyResponse.getResult().getValid())) {
-            logger.info("Valid Code");
+            System.out.println("Valid Code!");
         } else {
-            logger.info("Invalid Code");
+            System.out.println("Invalid Code");
         }
 
 
@@ -96,17 +97,18 @@ public class Main {
                     .from(bandwidthNumber)
                     .to(toNumber)
                     .digits(5)
-                    .message("Hello World this is your code:")
+                    .message("Hello World this is your code: {CODE}") // {CODE} is required
                     .scope("sample")
                     .build()
             );
         } catch (ApiException e) {
-            logger.error(e.getMessage());
+            System.out.println(e.getMessage());
+            System.out.println(e.getResponseCode());
             return false;
         }
 
         if (response == null ) {
-            logger.error("Response was null");
+            System.out.println("Response was null");
             return false;
         }
 
@@ -122,17 +124,18 @@ public class Main {
                     .from(bandwidthNumber)
                     .to(toNumber)
                     .digits(5)
-                    .message("Hello World this is your code:")
+                    .message("Hello World this is your code: {CODE}") // {CODE} is required
                     .scope("sample")
                     .build()
             );
         } catch (ApiException e) {
-            logger.error(e.getMessage());
+            System.out.println(e.getMessage());
+            System.out.println(e.getResponseCode());
             return false;
         }
 
         if (response == null ) {
-            logger.error("Response was null");
+            System.out.println("Response was null");
             return false;
         }
 
