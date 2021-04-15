@@ -16,12 +16,12 @@ import java.util.Scanner;
 public class Main {
 
 
-    private static final String username = System.getenv("BANDWIDTH_USERNAME");
-    private static final String password = System.getenv("BANDWIDTH_PASSWORD");
-    private static final String accountId = System.getenv("BANDWIDTH_ACCOUNT_ID");
-    private static final String voiceApplicationId = System.getenv("BANDWIDTH_VOICE_APPLICATION_ID");
-    private static final String messagingApplicationId = System.getenv("BANDWIDTH_MESSAGING_APPLICATION_ID");
-    private static final String bandwidthNumber = System.getenv("BANDWIDTH_PHONE_NUMBER");
+    private static final String username = System.getenv("BW_USERNAME");
+    private static final String password = System.getenv("BW_PASSWORD");
+    private static final String accountId = System.getenv("BW_ACCOUNT_ID");
+    private static final String voiceApplicationId = System.getenv("BW_VOICE_APPLICATION_ID");
+    private static final String messagingApplicationId = System.getenv("BW_MESSAGING_APPLICATION_ID");
+    private static final String bandwidthNumber = System.getenv("BW_NUMBER");
 
     private static final BandwidthClient client = new BandwidthClient.Builder()
         .twoFactorAuthBasicAuthCredentials(username, password)
