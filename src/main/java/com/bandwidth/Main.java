@@ -18,9 +18,9 @@ public class Main {
     private static final String username = System.getenv("BW_USERNAME");
     private static final String password = System.getenv("BW_PASSWORD");
     private static final String accountId = System.getenv("BW_ACCOUNT_ID");
-    private static final String voiceApplicationId = System.getenv("BW_MFA_VOICE_APPLICATION_ID");
-    private static final String messagingApplicationId = System.getenv("BW_MFA_MESSAGING_APPLICATION_ID");
-    private static final String bandwidthNumber = System.getenv("BW_MFA_NUMBER");
+    private static final String voiceApplicationId = System.getenv("BW_VOICE_APPLICATION_ID");
+    private static final String messagingApplicationId = System.getenv("BW_MESSAGING_APPLICATION_ID");
+    private static final String bandwidthNumber = System.getenv("BW_NUMBER");
 
     public static ApiClient defaultClient = Configuration.getDefaultApiClient();
     public static HttpBasicAuth Basic = (HttpBasicAuth) defaultClient.getAuthentication("Basic");
