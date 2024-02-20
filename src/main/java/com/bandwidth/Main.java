@@ -1,20 +1,19 @@
 package com.bandwidth;
 
+import com.bandwidth.sdk.ApiResponse;
+import com.bandwidth.sdk.ApiException;
+import com.bandwidth.sdk.ApiClient;
+import com.bandwidth.sdk.auth.HttpBasicAuth;
+import com.bandwidth.sdk.model.*;
+import com.bandwidth.sdk.api.*;
+import com.bandwidth.sdk.Configuration;
 
-import com.bandwidth.exceptions.ApiException;
-import com.bandwidth.http.response.ApiResponse;
-import com.bandwidth.twofactorauth.controllers.APIController;
-import com.bandwidth.twofactorauth.models.TwoFactorCodeRequestSchema;
-import com.bandwidth.twofactorauth.models.TwoFactorMessagingResponse;
-import com.bandwidth.twofactorauth.models.TwoFactorVerifyCodeResponse;
-import com.bandwidth.twofactorauth.models.TwoFactorVerifyRequestSchema;
-import com.bandwidth.twofactorauth.models.TwoFactorVoiceResponse;
+import java.math.BigDecimal;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Scanner;
 
 public class Main {
-
 
     private static final String username = System.getenv("BW_USERNAME");
     private static final String password = System.getenv("BW_PASSWORD");
@@ -23,15 +22,13 @@ public class Main {
     private static final String messagingApplicationId = System.getenv("BW_MESSAGING_APPLICATION_ID");
     private static final String bandwidthNumber = System.getenv("BW_NUMBER");
 
-    private static final BandwidthClient client = new BandwidthClient.Builder()
-        .twoFactorAuthBasicAuthCredentials(username, password)
-        .environment(Environment.PRODUCTION)
-        .build();
-
-    private static final APIController controller = client.getTwoFactorAuthClient().getAPIController();
+    public static ApiClient defaultClient = Configuration.getDefaultApiClient();
+    public static HttpBasicAuth Basic = (HttpBasicAuth) defaultClient.getAuthentication("Basic");
+    public static MfaApi api = new MfaApi(defaultClient);
 
     public static void main(String[] args) throws IOException {
 
+        CodeRequest request = new CodeRequest();
         Scanner scanner = new Scanner(new InputStreamReader(System.in));
 
         System.out.println("Send the code to the following phone number (E164 format: +13330004444): ");
@@ -40,14 +37,12 @@ public class Main {
         System.out.println("Text or Voice? ");
         String option = scanner.nextLine();
 
-        boolean success = false;
+        boolean success;
         String applicationId = null;
         if ("text".equalsIgnoreCase(option)) {
             success = sendMessageCode(toNumber);
-            applicationId = messagingApplicationId;
         } else if ("voice".equalsIgnoreCase(option)) {
             success = sendVoiceCode(toNumber);
-            applicationId = voiceApplicationId;
         } else {
             System.out.println("Must be 'Voice' or 'text'");
             return;
@@ -61,49 +56,49 @@ public class Main {
         System.out.println("What is the Code? ");
         String code = scanner.nextLine();
 
-        ApiResponse<TwoFactorVerifyCodeResponse> verifyResponse = null;
+        BigDecimal expirationTime = new BigDecimal(3);
+
+        VerifyCodeRequest verifyRequest = new VerifyCodeRequest();
+	verifyRequest.setCode(code);
+	verifyRequest.setTo(toNumber);
+	verifyRequest.setScope("mfa");
+	verifyRequest.setExpirationTimeInMinutes(expirationTime);
+        ApiResponse<VerifyCodeResponse> response = null; 
         try {
-            verifyResponse = controller.createVerifyTwoFactor(accountId, new TwoFactorVerifyRequestSchema().toBuilder()
-                .applicationId(applicationId)
-                .code(code)
-                .to(toNumber)
-                .from(bandwidthNumber)
-                .digits(5)
-                .scope("sample")
-                .expirationTimeInMinutes(3)
-                .build()
-            );
+            response = api.verifyCodeWithHttpInfo(accountId, verifyRequest);
+
         } catch (ApiException e) {
             System.out.println(e.getMessage());
-            System.out.println(e.getResponseCode());
             return;
         }
 
-        if (Boolean.TRUE.equals(verifyResponse.getResult().getValid())) {
+        if (Boolean.TRUE.equals(response.getData().getValid())) {
             System.out.println("Valid Code!");
         } else {
             System.out.println("Invalid Code");
         }
 
-
+	scanner.close();
+	return;
     }
 
     public static boolean sendMessageCode(String toNumber) throws IOException {
-        ApiResponse<TwoFactorMessagingResponse> response = null;
+
+	Basic.setUsername(username);
+	Basic.setPassword(password);
+        ApiResponse<MessagingCodeResponse> response = null;
+        CodeRequest request = new CodeRequest();
+        request.setTo(toNumber);
+        request.setFrom(bandwidthNumber);
+        request.setApplicationId(messagingApplicationId);
+        request.setScope("mfa");
+        request.setMessage("Your temporary {NAME} {SCOPE} code is {CODE}");
+        request.setDigits(5);
+
         try {
-            response = controller.createMessagingTwoFactor(accountId,
-                new TwoFactorCodeRequestSchema.Builder()
-                    .applicationId(messagingApplicationId)
-                    .from(bandwidthNumber)
-                    .to(toNumber)
-                    .digits(5)
-                    .message("Hello World this is your code: {CODE}") // {CODE} is required
-                    .scope("sample")
-                    .build()
-            );
+	    response = api.generateMessagingCodeWithHttpInfo(accountId, request);
         } catch (ApiException e) {
             System.out.println(e.getMessage());
-            System.out.println(e.getResponseCode());
             return false;
         }
 
@@ -116,21 +111,22 @@ public class Main {
     }
 
     public static boolean sendVoiceCode(String toNumber) throws IOException {
-        ApiResponse<TwoFactorVoiceResponse> response = null;
+
+	Basic.setUsername(username);
+	Basic.setPassword(password);
+        ApiResponse<VoiceCodeResponse> response = null; 
+        CodeRequest request = new CodeRequest();
+        request.setTo(toNumber);
+        request.setFrom(bandwidthNumber);
+        request.setApplicationId(voiceApplicationId);
+        request.setScope("mfa");
+        request.setMessage("This is your {CODE}");
+        request.setDigits(5);
+
         try {
-            response = controller.createVoiceTwoFactor(accountId,
-                new TwoFactorCodeRequestSchema.Builder()
-                    .applicationId(voiceApplicationId)
-                    .from(bandwidthNumber)
-                    .to(toNumber)
-                    .digits(5)
-                    .message("Hello World this is your code: {CODE}") // {CODE} is required
-                    .scope("sample")
-                    .build()
-            );
+            response = api.generateVoiceCodeWithHttpInfo(accountId, request);
         } catch (ApiException e) {
             System.out.println(e.getMessage());
-            System.out.println(e.getResponseCode());
             return false;
         }
 
